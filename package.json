@@ -1,0 +1,7 @@
+{
+  "name": "arabic-math-server",
+  "version": "1.0.0",
+  "dependencies": {
+    "mathjax-node": "^2.1.1"
+  }
+}
