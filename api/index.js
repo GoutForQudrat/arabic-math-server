@@ -1,33 +1,28 @@
 const mjAPI = require("mathjax-node");
 
-// إعداد المصنع
+// تشغيل المحرك بوضع أساسي سريع
 mjAPI.config({
   MathJax: {
-    // هنا نقول له اسمح لنا نستخدم حزم الرسومات
+    // نلغي الإضافات الخارجية عشان ما يعلق
   }
 });
 mjAPI.start();
 
 module.exports = (req, res) => {
-  // 1. استلام المعادلة من الرابط
-  let latex = req.query.latex || "x";
+  const latex = req.query.latex || "x";
 
-  // 2. تحويل المعادلة لصورة
   mjAPI.typeset({
     math: latex,
-    format: "TeX", // نوع الكود المدخل
-    svg: true,     // نبيه يخرج صورة فيكتور
-    width: 100     // عرض افتراضي
+    format: "TeX",
+    svg: true,
   }, function (data) {
     if (!data.errors) {
-      // 3. نجاح! إرسال الصورة
       res.setHeader("Content-Type", "image/svg+xml");
-      // هذا السطر يخلي الصورة تتخزن عشان تفتح بسرعة المرة الجاية
-      res.setHeader("Cache-Control", "s-maxage=86400"); 
+      // هذا الكود يخلي المتصفح يحفظ الصورة عشان تفتح بسرعة البرق مستقبلاً
+      res.setHeader("Cache-Control", "public, max-age=86400");
       res.send(data.svg);
     } else {
-      // 4. فشل
-      res.status(500).send("خطأ في المعادلة");
+      res.status(500).send("Error");
     }
   });
 };
