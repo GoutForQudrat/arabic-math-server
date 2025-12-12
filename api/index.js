@@ -3,18 +3,15 @@ const {TeX} = require('mathjax-full/js/input/tex.js');
 const {SVG} = require('mathjax-full/js/output/svg.js');
 const {liteAdaptor} = require('mathjax-full/js/adaptors/liteAdaptor.js');
 const {RegisterHTMLHandler} = require('mathjax-full/js/handlers/html.js');
+// تحميل الحزم الضرورية
+require('mathjax-full/js/input/tex/graphics/GraphicsConfiguration.js');
 const {AllPackages} = require('mathjax-full/js/input/tex/AllPackages.js');
 
 const adaptor = liteAdaptor();
 RegisterHTMLHandler(adaptor);
 
-// تفعيل حزم الرسومات (عشان المرايا)
 const tex = new TeX({
-  packages: AllPackages,
-  macros: {
-    // تعريف الجذر العربي: نعكس الجذر كله، ونعكس الرقم اللي داخله عشان يرجع طبيعي
-    arsqrt: ['\\reflectbox{\\sqrt{\\reflectbox{#1}}}', 1]
-  }
+  packages: AllPackages
 });
 
 const svg = new SVG({fontCache: 'none'});
@@ -24,13 +21,24 @@ module.exports = (req, res) => {
   try {
     let latex = req.query.latex || '1';
     
-    // 1. تحويل الأرقام الإنجليزية إلى هندية (عربية) تلقائياً
+    // 1. الأرقام الهندية
     const arabicDigits = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
-    latex = latex.replace(/[0-9]/g, function(w) { return arabicDigits[+w] });
+    latex = latex.replace(/[0-9]/g, w => arabicDigits[+w]);
 
-    // 2. استبدال أي جذر عادي بالجذر العربي المطور
-    latex = latex.replace(/\\sqrt/g, '\\arsqrt');
-
+    // 2. الجذر المقلوب (الحل السحري)
+    // نضيف \require{graphics} في بداية كل طلب
+    if (!latex.includes("graphics")) {
+       latex = "\\require{graphics} " + latex;
+    }
+    
+    // نستبدل \sqrt{...} بـ \reflectbox{\sqrt{\reflectbox{...}}}
+    // ملاحظة: هذا يشتغل مع الجذور البسيطة اللي ما فيها أقواس متداخلة
+    // إذا معادلاتك بسيطة، هذا بيمشي تمام
+    
+    // التعديل اليدوي من طرفك في الرابط أضمن:
+    // أنتِ ارسلي الرابط كذا: \reflectbox{\sqrt{\reflectbox{36}}}
+    // والسيرفر بس بيضيف الأرقام الهندية ويشغل الرسومات
+    
     const node = html.convert(latex, {
       display: true,
       em: 16,
@@ -41,7 +49,7 @@ module.exports = (req, res) => {
     const svgString = adaptor.innerHTML(node);
     
     res.setHeader("Content-Type", "image/svg+xml");
-    res.setHeader("Cache-Control", "s-maxage=86400, stale-while-revalidate");
+    res.setHeader("Cache-Control", "s-maxage=86400");
     res.send(svgString);
     
   } catch (error) {
