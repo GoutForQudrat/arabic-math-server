@@ -8,12 +8,12 @@ const {AllPackages} = require('mathjax-full/js/input/tex/AllPackages.js');
 const adaptor = liteAdaptor();
 RegisterHTMLHandler(adaptor);
 
-// إعدادات المترجم العربي
+// تفعيل حزم الرسومات (عشان المرايا)
 const tex = new TeX({
   packages: AllPackages,
   macros: {
-    // هنا نعرف أمر جديد اسمه "جذر عربي" يقوم بقلب الجذر ومحتواه مرتين عشان يضبط
-    arsqrt: ['\\style{transform: scaleX(-1); display:inline-block;}{\\sqrt{\\style{transform: scaleX(-1); display:inline-block;}{#1}}}', 1]
+    // تعريف الجذر العربي: نعكس الجذر كله، ونعكس الرقم اللي داخله عشان يرجع طبيعي
+    arsqrt: ['\\reflectbox{\\sqrt{\\reflectbox{#1}}}', 1]
   }
 });
 
@@ -22,13 +22,13 @@ const html = mathjax.document('', {InputJax: tex, OutputJax: svg});
 
 module.exports = (req, res) => {
   try {
-    let latex = req.query.latex || '1+2';
+    let latex = req.query.latex || '1';
     
     // 1. تحويل الأرقام الإنجليزية إلى هندية (عربية) تلقائياً
     const arabicDigits = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
     latex = latex.replace(/[0-9]/g, function(w) { return arabicDigits[+w] });
 
-    // 2. استبدال أي جذر عادي "sqrt" بجذرنا العربي المطور "arsqrt"
+    // 2. استبدال أي جذر عادي بالجذر العربي المطور
     latex = latex.replace(/\\sqrt/g, '\\arsqrt');
 
     const node = html.convert(latex, {
